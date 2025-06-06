@@ -6,16 +6,11 @@
 !pip install accelerate -U --quiet
 #!pip install huggingface_hub --quiet
 
-
-
 import os
 import random
 import numpy as np
 import torch
 import logging
-
-#from huggingface_hub import login
-#login("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")
 
 from transformers import (
     AutoTokenizer,
