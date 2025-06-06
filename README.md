@@ -57,7 +57,7 @@ If you find this work useful, please cite.
 
 ```
 @unpublished{martinezgil2025,
-  TITLE = {{Evaluating Small-Scale Code Models for Code Clone Detection}},
+  TITLE = {Evaluating Small-Scale Code Models for Code Clone Detection},
   AUTHOR = {Martinez-Gil, Jorge},
   URL = {https://hal.science/hal-05055646},
   NOTE = {working paper or preprint},
