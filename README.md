@@ -56,17 +56,16 @@ Results for each model-dataset combination, including detailed tables and analys
 If you find this work useful, please cite.
 
 ```
-@unpublished{martinezgil2025,
-  TITLE = {Evaluating Small-Scale Code Models for Code Clone Detection},
-  AUTHOR = {Martinez-Gil, Jorge},
-  URL = {https://hal.science/hal-05055646},
-  NOTE = {working paper or preprint},
-  YEAR = {2025},
-  MONTH = May,
-  KEYWORDS = {Source Code Analysis ; Code Clone Detection ; Benchmarking ; Transformers ; Small Code Models ; Transformers model},
-  PDF = {https://hal.science/hal-05055646v1/file/small-code-models.pdf},
-  HAL_ID = {hal-05055646},
-  HAL_VERSION = {v1},
+@article{martinezgil2025,
+  author       = {Jorge Martinez-Gil},
+  title        = {Evaluating Small-Scale Code Models for Code Clone Detection},
+  journal      = {CoRR},
+  volume       = {abs/2506.10995},
+  year         = {2025},
+  url          = {https://doi.org/10.48550/arXiv.2506.10995},
+  doi          = {10.48550/arXiv.2506.10995},
+  eprinttype   = {arXiv},
+  eprint       = {2506.10995}
 }
 ```
 
