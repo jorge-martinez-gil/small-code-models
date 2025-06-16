@@ -1,8 +1,9 @@
 # Evaluating Small-Scale Code Models for Code Clone Detection
 
-This repository contains the code and experiments to reproduce results from the paper:
+This repository contains the code and experiments to reproduce results from the paper: **Evaluating Small-Scale Code Models for Code Clone Detection** 
 
-**Evaluating Small-Scale Code Models for Code Clone Detection** (https://arxiv.org/abs/2506.10995)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.10995-b31b1b.svg)](https://arxiv.org/abs/2506.10995)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
 ## Abstract
 Detecting code clones is important for software maintenance and refactoring. This project evaluates several small transformer-based code models, specifically assessing their capability to classify code pairs as clones or non-clones across five benchmark datasets: BigCloneBench, Karnalim, PoolC, POJ104, and CodeJam.
