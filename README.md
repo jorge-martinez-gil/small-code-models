@@ -1,8 +1,8 @@
-# Benchmarking Small Code Models for Code Clone Identification
+# Evaluating Small-Scale Code Models for Code Clone Detection
 
 This repository contains the code and experiments to reproduce results from the paper:
 
-**"Benchmarking Small Code Models for Code Clone Identification"**
+**Evaluating Small-Scale Code Models for Code Clone Detection** (https://arxiv.org/abs/2506.10995)
 
 ## Abstract
 Detecting code clones is important for software maintenance and refactoring. This project evaluates several small transformer-based code models, specifically assessing their capability to classify code pairs as clones or non-clones across five benchmark datasets: BigCloneBench, Karnalim, PoolC, POJ104, and CodeJam.
