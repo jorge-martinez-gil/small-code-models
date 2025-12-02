@@ -40,52 +40,33 @@ We focus on efficiency-oriented models suitable for standard GPUs:
 * **POJ104:** Peking University student submissions (C++).
 * **PoolC:** Diverse clone types from open-source projects.
 
-## Reproducing the Experiments
 
-### Prerequisites
-- Python 3.8 or higher
-- PyTorch
-- Transformers (Hugging Face)
-- Datasets
+## Prerequisites
+* **OS:** Linux (Recommended) or Windows
+* **Hardware:** CUDA-enabled GPU (8GB+ VRAM recommended)
+* **Python:** Version 3.8, 3.9, or 3.10
 
-Install dependencies using:
-```bash
-pip install torch transformers datasets pandas numpy sklearn
-```
 
-### Setup
-Clone the repository:
-```bash
-git clone https://github.com/jorge-martinez-gil/small-code-models.git
-cd small-code-models
-```
+## 🖊️ Citation
 
-### Evaluation Metrics
-The scripts report performance using the following metrics:
-- Accuracy
-- Precision
-- Recall
-- F1-score
+If you use this code or our findings in your research, please cite the following paper.
 
-## Results
-Results for each model-dataset combination, including detailed tables and analysis, are presented in the associated paper.
+**BibTeX:**
 
-## Citation
-If you find this work useful, please cite.
-
-```
-@article{martinezgil2025,
+```bibtex
+@article{martinezgil2025smallscale,
   author       = {Jorge Martinez-Gil},
   title        = {Evaluating Small-Scale Code Models for Code Clone Detection},
   journal      = {CoRR},
   volume       = {abs/2506.10995},
   year         = {2025},
   url          = {https://doi.org/10.48550/arXiv.2506.10995},
-  doi          = {10.48550/arXiv.2506.10995},
-  eprinttype   = {arXiv},
-  eprint       = {2506.10995}
+  eprint       = {2506.10995},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.SE}
 }
 ```
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📜 License
+
+This project is licensed under the MIT License.
