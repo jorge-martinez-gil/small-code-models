@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/jorge-martinez-gil/small-code-models/graphs/commit-activity)
-[![Citations](https://img.shields.io/badge/citations-1-blue)](https://scholar.google.com/citations?view_op=view_citation&hl=en&citation_for_view=X1pRUYcAAAAJ:1pC5hbHeJ6IC)
+[![Citations](https://img.shields.io/badge/citations-2-blue)](https://scholar.google.com/citations?view_op=view_citation&hl=en&citation_for_view=X1pRUYcAAAAJ:1pC5hbHeJ6IC)
 
 > **Official repository** for the paper: *Evaluating Small-Scale Code Models for Code Clone Detection*.
 
@@ -66,6 +66,18 @@ If you use this code or our findings in your research, please cite the following
   primaryClass = {cs.SE}
 }
 ```
+
+## 📖 Research that has already cited this work
+
+1. **[AI Assisted System for Automated Evaluation of Entity-Relationship Diagram and Schema Diagram Using Large Language Models](https://www.mdpi.com/2504-2289/10/1/2))**
+   - **Authors:** R. Ramachandran, P. Vijayan, A. Anilkumar, …
+   - **Journal:** *Big Data and Cognitive Computing*, 2025 (MDPI)
+   - **Abstract:** Describes an automated marking system for database design exercises. An LLM compares student ER and schema diagrams with instructor references, aiming to reduce manual review time and improve scoring consistency.
+
+2. **[Nuanced Code Clone Detection Through LLM-Based Code Revision and AST Graph Modeling](https://ieeexplore.ieee.org/](https://ieeexplore.ieee.org/iel8/6287639/10820123/11224755.pdf))**
+   - **Authors:** C. Li, J. Konpang, A. Sirikham, Y. Wang
+   - **Journal:** *IEEE Access*, 2025
+   - **Abstract:** Focuses on detecting Type-4 code clones where behavior matches even if structure differs. The method mixes LLM-guided code rewriting with graph representations of syntax trees to better identify deep similarity across code fragments.
 
 ## 📜 License
 
