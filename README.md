@@ -69,15 +69,21 @@ If you use this code or our findings in your research, please cite the following
 
 ## 📖 Research that has already cited this work
 
-1. **[AI Assisted System for Automated Evaluation of Entity-Relationship Diagram and Schema Diagram Using Large Language Models](https://www.mdpi.com/2504-2289/10/1/2))**
+1. **[AI Assisted System for Automated Evaluation of Entity-Relationship Diagram and Schema Diagram Using Large Language Models](https://www.mdpi.com/2504-2289/10/1/2)**
    - **Authors:** R. Ramachandran, P. Vijayan, A. Anilkumar, …
    - **Journal:** *Big Data and Cognitive Computing*, 2025 (MDPI)
    - **Abstract:** Describes an automated marking system for database design exercises. An LLM compares student ER and schema diagrams with instructor references, aiming to reduce manual review time and improve scoring consistency.
 
-2. **[Nuanced Code Clone Detection Through LLM-Based Code Revision and AST Graph Modeling](https://ieeexplore.ieee.org/](https://ieeexplore.ieee.org/iel8/6287639/10820123/11224755.pdf))**
+2. **[Nuanced Code Clone Detection Through LLM-Based Code Revision and AST Graph Modeling](https://ieeexplore.ieee.org/iel8/6287639/10820123/11224755.pdf)**
    - **Authors:** C. Li, J. Konpang, A. Sirikham, Y. Wang
    - **Journal:** *IEEE Access*, 2025
    - **Abstract:** Focuses on detecting Type-4 code clones where behavior matches even if structure differs. The method mixes LLM-guided code rewriting with graph representations of syntax trees to better identify deep similarity across code fragments.
+
+3. **[From Code Foundation Models to Agents and Applications: A Comprehensive Survey and Practical Guide to Code Intelligence](https://arxiv.org/pdf/2511.18538)**
+   - **Authors:** J. Yang, X. Liu, W. Lv, K. Deng, S. Guo, L. Jing, Y. Li, …
+   - **Venue:** *arXiv preprint*, 2025
+   - **Abstract:** Surveys recent progress in code intelligence enabled by large language models, covering code foundation models, agent-based systems, and downstream applications. The paper reviews architectural designs, training strategies, evaluation benchmarks, and practical deployment patterns, offering guidance for applying LLMs to automated software development tasks.
+
 
 ## 📜 License
 
