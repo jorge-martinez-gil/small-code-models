@@ -40,12 +40,41 @@ We focus on efficiency-oriented models suitable for standard GPUs:
 * **POJ104:** Peking University student submissions (C++).
 * **PoolC:** Diverse clone types from open-source projects.
 
+## 📈 Benchmark Results (Summary)
+
+> Full results with Precision, Recall, and F1 per clone type are reported in the [paper](https://doi.org/10.48550/arXiv.2506.10995).
+
+| Model | BigCloneBench F1 | POJ104 F1 | CodeJam F1 |
+| :--- | :---: | :---: | :---: |
+| CodeBERT | — | — | — |
+| GraphCodeBERT | — | — | — |
+| PLBART | — | — | — |
+| PolyCoder | — | — | — |
+| UniXCoder | — | — | — |
+| Salesforce T5 | — | — | — |
 
 ## Prerequisites
 * **OS:** Linux (Recommended) or Windows
 * **Hardware:** CUDA-enabled GPU (8GB+ VRAM recommended)
 * **Python:** Version 3.8, 3.9, or 3.10
 
+## 🛠️ Installation
+
+```bash
+git clone https://github.com/jorge-martinez-gil/small-code-models.git
+cd small-code-models
+pip install -r requirements.txt
+```
+
+## 🔬 Reproducibility
+
+Each script in the dataset directories is self-contained. To replicate results on BigCloneBench with CodeBERT:
+
+```bash
+python bcb_detection_models/codebert-bcb-01.py
+```
+
+All scripts follow the same structure: load dataset → fine-tune model → evaluate and report F1 / Precision / Recall.
 
 ## 🖊️ Citation
 
@@ -84,6 +113,14 @@ If you use this code or our findings in your research, please cite the following
    - **Venue:** *arXiv preprint*, 2025
    - **Abstract:** Surveys recent progress in code intelligence enabled by large language models, covering code foundation models, agent-based systems, and downstream applications. The paper reviews architectural designs, training strategies, evaluation benchmarks, and practical deployment patterns, offering guidance for applying LLMs to automated software development tasks.
 
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting bugs, adding new models or datasets, and our code style conventions.
+
+## 💬 Questions & Discussions
+
+Have a question about the results or want to discuss the methodology? [Open a GitHub Issue](https://github.com/jorge-martinez-gil/small-code-models/issues) or start a [GitHub Discussion](https://github.com/jorge-martinez-gil/small-code-models/discussions). We're happy to help!
 
 ## 📜 License
 

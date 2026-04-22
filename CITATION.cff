@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Evaluating Small-Scale Code Models for Code Clone Detection"
+authors:
+  - family-names: "Martinez-Gil"
+    given-names: "Jorge"
+    orcid: "https://orcid.org/0000-0002-1632-1580"
+repository-code: "https://github.com/jorge-martinez-gil/small-code-models"
+url: "https://doi.org/10.48550/arXiv.2506.10995"
+preferred-citation:
+  type: article
+  title: "Evaluating Small-Scale Code Models for Code Clone Detection"
+  authors:
+    - family-names: "Martinez-Gil"
+      given-names: "Jorge"
+  journal: "CoRR"
+  volume: "abs/2506.10995"
+  year: 2025
+  url: "https://doi.org/10.48550/arXiv.2506.10995"
+  identifiers:
+    - type: url
+      value: "https://arxiv.org/abs/2506.10995"
