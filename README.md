@@ -40,19 +40,6 @@ We focus on efficiency-oriented models suitable for standard GPUs:
 * **POJ104:** Peking University student submissions (C++).
 * **PoolC:** Diverse clone types from open-source projects.
 
-## 📈 Benchmark Results (Summary)
-
-> Full results with Precision, Recall, and F1 per clone type are reported in the [paper](https://doi.org/10.48550/arXiv.2506.10995).
-
-| Model | BigCloneBench F1 | POJ104 F1 | CodeJam F1 |
-| :--- | :---: | :---: | :---: |
-| CodeBERT | — | — | — |
-| GraphCodeBERT | — | — | — |
-| PLBART | — | — | — |
-| PolyCoder | — | — | — |
-| UniXCoder | — | — | — |
-| Salesforce T5 | — | — | — |
-
 ## Prerequisites
 * **OS:** Linux (Recommended) or Windows
 * **Hardware:** CUDA-enabled GPU (8GB+ VRAM recommended)
