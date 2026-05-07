@@ -9,7 +9,6 @@
 [![GitHub forks](https://img.shields.io/github/forks/jorge-martinez-gil/small-code-models?style=social)](https://github.com/jorge-martinez-gil/small-code-models/network/members)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jorge-martinez-gil/small-code-models/blob/main/notebooks/quick_start.ipynb)
 [![DOI](https://img.shields.io/badge/DOI-10.48550%2FarXiv.2506.10995-blue)](https://doi.org/10.48550/arXiv.2506.10995)
-[![CI](https://github.com/jorge-martinez-gil/small-code-models/actions/workflows/ci.yml/badge.svg)](https://github.com/jorge-martinez-gil/small-code-models/actions/workflows/ci.yml)
 
 **TL;DR:** This repository is the official, reproducible benchmark suite for the paper *Evaluating Small-Scale Code Models for Code Clone Detection*, with unified scripts to train and evaluate six compact code models across five clone-detection datasets.
 
@@ -38,66 +37,6 @@ This work rigorously evaluates **small-scale transformer-based code models (<220
 | UniXCoder | ~200 M | Unified Enc-Dec | `microsoft/unixcoder-base` |
 | Salesforce CodeT5 | 220 M | Encoder-Decoder | `Salesforce/codet5-base` |
 
-## Benchmark Results
-
-The following values are **representative values — see paper for exact figures**.
-
-### BigCloneBench (BCB)
-
-| Model | Precision | Recall | F1 |
-|---|---|---|---|
-| CodeBERT | 0.91 | 0.89 | 0.90 |
-| GraphCodeBERT | 0.92 | 0.90 | 0.91 |
-| PLBART | 0.87 | 0.85 | 0.86 |
-| PolyCoder | 0.82 | 0.80 | 0.81 |
-| UniXCoder | 0.90 | 0.88 | 0.89 |
-| CodeT5 | 0.88 | 0.86 | 0.87 |
-
-### POJ104
-
-| Model | Precision | Recall | F1 |
-|---|---|---|---|
-| CodeBERT | 0.89 | 0.87 | 0.88 |
-| GraphCodeBERT | 0.90 | 0.88 | 0.89 |
-| PLBART | 0.84 | 0.83 | 0.84 |
-| PolyCoder | 0.79 | 0.77 | 0.78 |
-| UniXCoder | 0.88 | 0.86 | 0.87 |
-| CodeT5 | 0.85 | 0.84 | 0.85 |
-
-### GCJ
-
-| Model | Precision | Recall | F1 |
-|---|---|---|---|
-| CodeBERT | 0.87 | 0.85 | 0.86 |
-| GraphCodeBERT | 0.88 | 0.86 | 0.87 |
-| PLBART | 0.82 | 0.80 | 0.81 |
-| PolyCoder | 0.76 | 0.74 | 0.75 |
-| UniXCoder | 0.86 | 0.84 | 0.85 |
-| CodeT5 | 0.83 | 0.81 | 0.82 |
-
-### Karnalim
-
-| Model | Precision | Recall | F1 |
-|---|---|---|---|
-| CodeBERT | 0.85 | 0.83 | 0.84 |
-| GraphCodeBERT | 0.86 | 0.84 | 0.85 |
-| PLBART | 0.80 | 0.78 | 0.79 |
-| PolyCoder | 0.73 | 0.71 | 0.72 |
-| UniXCoder | 0.84 | 0.82 | 0.83 |
-| CodeT5 | 0.81 | 0.79 | 0.80 |
-
-### PoolC
-
-| Model | Precision | Recall | F1 |
-|---|---|---|---|
-| CodeBERT | 0.88 | 0.86 | 0.87 |
-| GraphCodeBERT | 0.89 | 0.87 | 0.88 |
-| PLBART | 0.83 | 0.81 | 0.82 |
-| PolyCoder | 0.77 | 0.75 | 0.76 |
-| UniXCoder | 0.87 | 0.85 | 0.86 |
-| CodeT5 | 0.84 | 0.82 | 0.83 |
-
-Exact figures are reported in Table 2 of the <a href="https://doi.org/10.48550/arXiv.2506.10995">paper</a>. Run the scripts to reproduce.
 
 ## Quick Start
 
