@@ -176,16 +176,6 @@ A `CITATION.cff` file is included for one-click citation via GitHub's "Cite this
 2. **Li, C., Konpang, J., Sirikham, A., & Wang, Y.** (2025). [Nuanced Code Clone Detection Through LLM-Based Code Revision and AST Graph Modeling](https://ieeexplore.ieee.org/iel8/6287639/10820123/11224755.pdf). *IEEE Access*.
 3. **Yang, J., Liu, X., Lv, W., Deng, K., Guo, S., Jing, L., Li, Y., et al.** (2025). [From Code Foundation Models to Agents and Applications: A Comprehensive Survey and Practical Guide to Code Intelligence](https://arxiv.org/pdf/2511.18538). *arXiv preprint*.
 
-## Related Work
-
-- **BigCloneBench:** [Svajlenko et al., "BigCloneBench: A Big Data Benchmark of Clone Detection"](https://ieeexplore.ieee.org/document/7873937)
-- **CodeBERT:** [Feng et al., "CodeBERT: A Pre-Trained Model for Programming and Natural Languages"](https://arxiv.org/abs/2002.08155)
-- **GraphCodeBERT:** [Guo et al., "GraphCodeBERT: Pre-training Code Representations with Data Flow"](https://arxiv.org/abs/2009.08366)
-- **POJ104 dataset:** [Mou et al., "Convolutional Neural Networks over Tree Structures for Programming Language Processing"](https://papers.nips.cc/paper_files/paper/2016/hash/aa169b49b583a2b5af89203c2b78c67c-Abstract.html)
-- **UniXCoder:** [Guo et al., "UniXcoder: Unified Cross-Modal Pre-training for Code Representation"](https://arxiv.org/abs/2203.03850)
-
 ## License & Contact
 
 This project is licensed under the MIT License.
-
-For questions related to the paper or repository, contact **Jorge Martinez-Gil** at **jorge.martinez.gil@jku.at**.
