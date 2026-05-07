@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "small-code-models"
+version = "1.0.0"
+description = "Evaluation framework for small-scale code models on clone detection benchmarks"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Jorge Martinez-Gil", email = "jorge.martinez.gil@jku.at" }]
+keywords = ["code clone detection", "code models", "CodeBERT", "software engineering", "NLP"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=1.10.0",
+    "transformers>=4.20.0",
+    "datasets>=2.0.0",
+    "scikit-learn>=1.0.0",
+    "numpy>=1.21.0",
+    "tqdm>=4.62.0",
+    "accelerate>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "flake8", "black", "isort"]
+
+[project.urls]
+Homepage = "https://github.com/jorge-martinez-gil/small-code-models"
+Paper = "https://doi.org/10.48550/arXiv.2506.10995"
+"Bug Tracker" = "https://github.com/jorge-martinez-gil/small-code-models/issues"
+
+[tool.setuptools]
+packages = ["small_code_models"]

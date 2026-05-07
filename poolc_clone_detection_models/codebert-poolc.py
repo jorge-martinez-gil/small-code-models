@@ -1,132 +1,134 @@
-# --------------------------------------------------------------------------------
-# Installation (uncomment if running in a fresh environment like Google Colab)
-# --------------------------------------------------------------------------------
-# !pip install transformers[torch] --quiet
-# !pip install datasets --quiet
-# !pip install accelerate -U --quiet
+"""Run CodeBERT clone-detection experiments on the POOLC benchmark."""
 
-import os
-import random
-import numpy as np
-import torch
-import logging
+from __future__ import annotations
 
-from transformers import (
-    RobertaTokenizer,
-    RobertaForSequenceClassification,
-    Trainer,
-    TrainingArguments,
-    DataCollatorWithPadding,
-)
-from datasets import load_dataset
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+import argparse
 
-# --------------------------------------------------------------------------------
-# Environment & Logging
-# --------------------------------------------------------------------------------
-os.environ["WANDB_DISABLED"] = "true"  # Disable W&B if you do not wish to log there
-logging.disable(logging.WARNING)
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import DataCollatorWithPadding
 
-# Set seed for reproducibility
-def set_seed(seed: int = 42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+from small_code_models.data import build_datasets
+from small_code_models.metrics import print_metrics_table
+from small_code_models.trainer import CloneDetectionTrainer, get_training_args
 
-set_seed(42)
+MODEL_ID = "microsoft/codebert-base"
+MODEL_NAME = "CodeBERT"
+DATASET_NAME = "poolc"
 
-# Determine device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# --------------------------------------------------------------------------------
-# Load model & tokenizer
-# --------------------------------------------------------------------------------
-tokenizer = RobertaTokenizer.from_pretrained("microsoft/codebert-base")
-model = RobertaForSequenceClassification.from_pretrained("microsoft/codebert-base", num_labels=2)
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for a benchmark run.
 
-# --------------------------------------------------------------------------------
-# Preprocessing function
-# --------------------------------------------------------------------------------
-def preprocess_function(examples):
+    Args:
+        None.
+
+    Returns:
+        Parsed command-line namespace.
+
+    Raises:
+        SystemExit: Raised by argparse for invalid CLI usage.
     """
-    Tokenize pairs (code1, code2) and set up labels from 'similar'.
-    Uses dynamic padding at collator level, so no need for max_length here
-    (unless you strongly prefer truncation).
+    parser = argparse.ArgumentParser(
+        description=f"Run {MODEL_NAME} on {DATASET_NAME} clone detection."
+    )
+    parser.add_argument(
+        "--data_dir",
+        required=True,
+        help="Directory with data.jsonl, train.txt, valid.txt, and test.txt",
+    )
+    parser.add_argument(
+        "--output_dir",
+        required=True,
+        help="Directory for model outputs and checkpoints",
+    )
+    parser.add_argument(
+        "--sample_pct",
+        type=float,
+        default=100.0,
+        help="Percentage of each split to use",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=3,
+        help="Number of training epochs",
+    )
+    return parser.parse_args()
+
+
+def load_model_and_tokenizer() -> tuple[AutoTokenizer, AutoModelForSequenceClassification]:
+    """Create tokenizer and sequence-classification model for the configured model id.
+
+    Args:
+        None.
+
+    Returns:
+        A ``(tokenizer, model)`` tuple.
+
+    Raises:
+        OSError: If model assets cannot be resolved from Hugging Face.
     """
-    return tokenizer(examples["code1"], examples["code2"], truncation=True)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
 
-# --------------------------------------------------------------------------------
-# Load and preprocess the dataset
-# --------------------------------------------------------------------------------
-dataset = load_dataset('PoolC/1-fold-clone-detection-600k-5fold')
+    config = AutoConfig.from_pretrained(MODEL_ID, num_labels=2)
+    if config.pad_token_id is None and tokenizer.pad_token_id is not None:
+        config.pad_token_id = tokenizer.pad_token_id
 
-# Instead of just selecting the first samples, let's randomly sample indices
-# for training and validation for better generalization.
-train_indices = random.sample(range(len(dataset['train'])), 10000)
-val_indices = random.sample(range(len(dataset['val'])), 2000)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID,
+        config=config,
+        ignore_mismatched_sizes=True,
+    )
+    return tokenizer, model
 
-train_dataset = dataset["train"].select(train_indices).map(preprocess_function, batched=True)
-val_dataset = dataset["val"].select(val_indices).map(preprocess_function, batched=True)
 
-# Convert 'similar' into integer labels
-train_dataset = train_dataset.rename_column("similar", "labels")
-val_dataset = val_dataset.rename_column("similar", "labels")
+def main() -> None:
+    """Run training and report test metrics.
 
-# --------------------------------------------------------------------------------
-# Data Collator (for dynamic padding)
-# --------------------------------------------------------------------------------
-data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
+    Args:
+        None.
 
-# --------------------------------------------------------------------------------
-# Custom Metrics
-# --------------------------------------------------------------------------------
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average='binary', zero_division=0)
-    acc = accuracy_score(labels, predictions)
-    return {'accuracy': acc, 'f1': f1, 'precision': precision, 'recall': recall}
+    Returns:
+        None.
 
-# --------------------------------------------------------------------------------
-# Training Arguments
-# --------------------------------------------------------------------------------
-training_args = TrainingArguments(
-    output_dir='./results',
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    num_train_epochs=3,
-    weight_decay=0.01,
-    logging_dir='./logs',
-    logging_steps=50,
-    load_best_model_at_end=True,
-    metric_for_best_model="f1",
-    greater_is_better=True,
-    report_to="none",         # Disable additional logging (like WandB); set to "tensorboard" if desired
-    fp16=True,                # Enable mixed precision for faster training on GPUs
-    group_by_length=True,     # Group sequences of similar lengths for efficiency
-    seed=42,
-)
+    Raises:
+        RuntimeError: If training or evaluation fails.
+    """
+    args = parse_args()
+    tokenizer, model = load_model_and_tokenizer()
 
-# --------------------------------------------------------------------------------
-# Trainer
-# --------------------------------------------------------------------------------
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=val_dataset,
-    data_collator=data_collator,
-    compute_metrics=compute_metrics
-)
+    train_ds, val_ds, test_ds = build_datasets(
+        args.data_dir,
+        tokenizer,
+        sample_pct=args.sample_pct,
+    )
 
-# --------------------------------------------------------------------------------
-# Train & Evaluate
-# --------------------------------------------------------------------------------
-trainer.train()
-eval_results = trainer.evaluate()
+    trainer = CloneDetectionTrainer(
+        model=model,
+        args=get_training_args(
+            args.output_dir,
+            num_train_epochs=args.epochs,
+            fp16=False,
+        ),
+        data_collator=DataCollatorWithPadding(
+            tokenizer=tokenizer,
+            pad_to_multiple_of=8,
+        ),
+    )
+    test_results = trainer.run(train_ds, val_ds, test_ds)
 
-print("Evaluation Results:", eval_results)
+    metrics = {
+        "test": {
+            "accuracy": test_results.get("eval_accuracy", 0.0),
+            "precision": test_results.get("eval_precision", 0.0),
+            "recall": test_results.get("eval_recall", 0.0),
+            "f1": test_results.get("eval_f1", 0.0),
+        }
+    }
+    print_metrics_table(metrics)
+
+
+if __name__ == "__main__":
+    main()

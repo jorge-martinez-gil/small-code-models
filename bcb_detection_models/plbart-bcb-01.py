@@ -1,226 +1,134 @@
-# --------------------------------------------------------------------------------
-# Installation (uncomment if running in a fresh environment like Google Colab)
-# --------------------------------------------------------------------------------
-!pip install transformers[torch] --quiet
-!pip install datasets --quiet
-!pip install accelerate -U --quiet
+"""Run PLBART clone-detection experiments on the BCB benchmark."""
 
-import os
-import random
-import json
-import gc
-import torch
-import logging
-import numpy as np
+from __future__ import annotations
 
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-    Trainer,
-    TrainingArguments,
-    DataCollatorWithPadding,
-    EarlyStoppingCallback,
-)
-from sklearn.metrics import f1_score, precision_score, recall_score
+import argparse
 
-# Clear CUDA cache and run garbage collection
-torch.cuda.empty_cache()
-gc.collect()
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import DataCollatorWithPadding
 
-# --------------------------------------------------------------------------------
-# Environment & Logging
-# --------------------------------------------------------------------------------
-os.environ["WANDB_DISABLED"] = "true"  # Disable Weights & Biases logging
-logging.disable(logging.WARNING)
+from small_code_models.data import build_datasets
+from small_code_models.metrics import print_metrics_table
+from small_code_models.trainer import CloneDetectionTrainer, get_training_args
 
-# Set seed for reproducibility
-def set_seed(seed: int = 42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+MODEL_ID = "uclanlp/plbart-base"
+MODEL_NAME = "PLBART"
+DATASET_NAME = "bcb"
 
-set_seed(42)
 
-# --------------------------------------------------------------------------------
-# Data Loading Functions
-# --------------------------------------------------------------------------------
-def load_code_snippets(jsonl_path):
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for a benchmark run.
+
+    Args:
+        None.
+
+    Returns:
+        Parsed command-line namespace.
+
+    Raises:
+        SystemExit: Raised by argparse for invalid CLI usage.
     """
-    Load code snippets from a JSONL file.
+    parser = argparse.ArgumentParser(
+        description=f"Run {MODEL_NAME} on {DATASET_NAME} clone detection."
+    )
+    parser.add_argument(
+        "--data_dir",
+        required=True,
+        help="Directory with data.jsonl, train.txt, valid.txt, and test.txt",
+    )
+    parser.add_argument(
+        "--output_dir",
+        required=True,
+        help="Directory for model outputs and checkpoints",
+    )
+    parser.add_argument(
+        "--sample_pct",
+        type=float,
+        default=100.0,
+        help="Percentage of each split to use",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=3,
+        help="Number of training epochs",
+    )
+    return parser.parse_args()
+
+
+def load_model_and_tokenizer() -> tuple[AutoTokenizer, AutoModelForSequenceClassification]:
+    """Create tokenizer and sequence-classification model for the configured model id.
+
+    Args:
+        None.
+
+    Returns:
+        A ``(tokenizer, model)`` tuple.
+
+    Raises:
+        OSError: If model assets cannot be resolved from Hugging Face.
     """
-    code_snippets = {}
-    with open(jsonl_path, 'r', encoding='utf-8') as file:
-        for line in file:
-            data = json.loads(line)
-            code_snippets[data["idx"]] = data["func"]
-    return code_snippets
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
 
-def load_dataset(txt_path, code_snippets, sample_percentage=100.0):
+    config = AutoConfig.from_pretrained(MODEL_ID, num_labels=2)
+    if config.pad_token_id is None and tokenizer.pad_token_id is not None:
+        config.pad_token_id = tokenizer.pad_token_id
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID,
+        config=config,
+        ignore_mismatched_sizes=True,
+    )
+    return tokenizer, model
+
+
+def main() -> None:
+    """Run training and report test metrics.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If training or evaluation fails.
     """
-    Load dataset from a TXT file and sample a percentage of the data.
-    """
-    all_pairs = []
-    all_labels = []
-    with open(txt_path, 'r') as file:
-        for line in file:
-            id1, id2, label = line.strip().split('\t')
-            code1 = code_snippets.get(id1, "")
-            code2 = code_snippets.get(id2, "")
-            if code1 and code2:
-                all_pairs.append((code1, code2))
-                all_labels.append(int(label))
+    args = parse_args()
+    tokenizer, model = load_model_and_tokenizer()
 
-    sample_size = int(len(all_labels) * sample_percentage / 100)
-    indices = random.sample(range(len(all_labels)), sample_size)
-    pairs = [all_pairs[i] for i in indices]
-    labels = [all_labels[i] for i in indices]
-
-    return pairs, labels
-
-# --------------------------------------------------------------------------------
-# Custom Dataset using dynamic padding (no fixed padding here)
-# --------------------------------------------------------------------------------
-from torch.utils.data import Dataset
-
-class CloneDetectionDataset(Dataset):
-    """
-    Custom Dataset class for clone detection.
-    """
-    def __init__(self, tokenizer, pairs, labels):
-        self.tokenizer = tokenizer
-        self.pairs = pairs
-        self.labels = labels
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, idx):
-        encoding = self.tokenizer(
-            self.pairs[idx][0],
-            self.pairs[idx][1],
-            truncation=True,
-            max_length=512,
-            return_tensors="pt"
-        )
-        item = {key: val.squeeze(0) for key, val in encoding.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
-
-def prepare_dataset(filepath, tokenizer, code_snippets, sample_percentage=100.0):
-    """
-    Prepare dataset by loading and tokenizing the data.
-    """
-    pairs, labels = load_dataset(filepath, code_snippets, sample_percentage)
-    return CloneDetectionDataset(tokenizer, pairs, labels)
-
-# --------------------------------------------------------------------------------
-# Custom Metrics Function (Fixed `logits` Handling)
-# --------------------------------------------------------------------------------
-def compute_metrics(eval_pred):
-    """
-    Compute evaluation metrics: accuracy, F1 score, precision, and recall.
-    """
-    logits, labels = eval_pred
-
-    # Ensure logits is a NumPy array
-    if isinstance(logits, tuple):
-        logits = logits[0]  # Extract first element if logits is a tuple
-
-    logits = np.array(logits)  # Convert to NumPy array explicitly
-
-    # Handle potential extra dimensions in logits
-    if logits.ndim == 3:  
-        logits = logits[:, 0, :]  
-
-    # Compute predictions
-    predictions = np.argmax(logits, axis=1)
-
-    # Compute metrics
-    accuracy = np.mean(predictions == labels)
-    f1 = f1_score(labels, predictions, average='binary')
-    precision = precision_score(labels, predictions, average='binary')
-    recall = recall_score(labels, predictions, average='binary')
-    
-    return {
-        'accuracy': accuracy,
-        'f1': f1,
-        'precision': precision,
-        'recall': recall,
-    }
-
-
-
-# --------------------------------------------------------------------------------
-# Main Training Function
-# --------------------------------------------------------------------------------
-def main():
-    # Set up device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # --------------------------------------------------------------------
-    # Use PLBart as a classification model:
-    # We use "uclanlp/plbart-base" with AutoModelForSequenceClassification.
-    # --------------------------------------------------------------------
-    tokenizer = AutoTokenizer.from_pretrained("uclanlp/plbart-base")
-    model = AutoModelForSequenceClassification.from_pretrained("uclanlp/plbart-base", num_labels=2)
-    model.to(device)
-
-    # Load code snippets
-    code_snippets = load_code_snippets('/content/drive/MyDrive/datasets/bcb/data.jsonl')
-
-    # Prepare datasets
-    train_dataset = prepare_dataset('/content/drive/MyDrive/datasets/bcb/train.txt', tokenizer, code_snippets, sample_percentage=1.0)
-    val_dataset = prepare_dataset('/content/drive/MyDrive/datasets/bcb/valid.txt', tokenizer, code_snippets, sample_percentage=1.0)
-    test_dataset = prepare_dataset('/content/drive/MyDrive/datasets/bcb/test.txt', tokenizer, code_snippets, sample_percentage=1.0)
-
-    # Data collator for dynamic padding
-    data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
-
-    # Training arguments
-    training_args = TrainingArguments(
-        output_dir='results',
-        num_train_epochs=3,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir='./logs',
-        logging_steps=50,
-        evaluation_strategy="steps",
-        eval_steps=500,
-        save_strategy="steps",
-        save_steps=500,
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        fp16=True,
-        group_by_length=True,
-        seed=42,
-        disable_tqdm=False,
+    train_ds, val_ds, test_ds = build_datasets(
+        args.data_dir,
+        tokenizer,
+        sample_pct=args.sample_pct,
     )
 
-    # Trainer setup
-    trainer = Trainer(
+    trainer = CloneDetectionTrainer(
         model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
+        args=get_training_args(
+            args.output_dir,
+            num_train_epochs=args.epochs,
+            fp16=False,
+        ),
+        data_collator=DataCollatorWithPadding(
+            tokenizer=tokenizer,
+            pad_to_multiple_of=8,
+        ),
     )
+    test_results = trainer.run(train_ds, val_ds, test_ds)
 
-    # Train the model
-    trainer.train()
+    metrics = {
+        "test": {
+            "accuracy": test_results.get("eval_accuracy", 0.0),
+            "precision": test_results.get("eval_precision", 0.0),
+            "recall": test_results.get("eval_recall", 0.0),
+            "f1": test_results.get("eval_f1", 0.0),
+        }
+    }
+    print_metrics_table(metrics)
 
-    # Evaluate the model on test data
-    test_results = trainer.evaluate(test_dataset)
-
-    print(f"Accuracy: {test_results['eval_accuracy']:.4f}")
-    print(f"Precision: {test_results['eval_precision']:.4f}")
-    print(f"Recall: {test_results['eval_recall']:.4f}")
-    print(f"F1 Score: {test_results['eval_f1']:.4f}")
 
 if __name__ == "__main__":
     main()

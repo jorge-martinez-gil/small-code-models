@@ -1,4 +1,4 @@
-"""Run CodeT5 clone-detection experiments on the GCJ benchmark."""
+"""Run PLBART clone-detection experiments on the POJ104 benchmark."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from small_code_models.data import build_datasets
 from small_code_models.metrics import print_metrics_table
 from small_code_models.trainer import CloneDetectionTrainer, get_training_args
 
-MODEL_ID = "Salesforce/codet5-base"
-MODEL_NAME = "CodeT5"
-DATASET_NAME = "gcj"
+MODEL_ID = "uclanlp/plbart-base"
+MODEL_NAME = "PLBART"
+DATASET_NAME = "poj104"
 
 
 def parse_args() -> argparse.Namespace:
