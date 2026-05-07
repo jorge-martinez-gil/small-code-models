@@ -4,8 +4,8 @@ small_code_models — shared utilities for the paper
 
 Usage
 -----
-from small_code_models.data import load_bcb_dataset
-from small_code_models.metrics import compute_clone_metrics
+from small_code_models.data import build_datasets, load_code_snippets
+from small_code_models.metrics import compute_metrics
 from small_code_models.trainer import CloneDetectionTrainer
 """
 

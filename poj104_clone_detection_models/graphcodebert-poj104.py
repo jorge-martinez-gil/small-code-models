@@ -1,4 +1,4 @@
-"""Run CodeBERT clone-detection experiments on the POJ104 benchmark."""
+"""Run GraphCodeBERT clone-detection experiments on the POJ104 benchmark."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from small_code_models.data import build_datasets
 from small_code_models.metrics import print_metrics_table
 from small_code_models.trainer import CloneDetectionTrainer, get_training_args
 
-MODEL_ID = "microsoft/codebert-base"
-MODEL_NAME = "CodeBERT"
+MODEL_ID = "microsoft/graphcodebert-base"
+MODEL_NAME = "GraphCodeBERT"
 DATASET_NAME = "poj104"
 
 

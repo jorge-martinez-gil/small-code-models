@@ -36,7 +36,7 @@ SCRIPT_MAP_t5_karnalim="karnalim_clone_detection_models/t5-karnalim.py"
 
 SCRIPT_MAP_codebert_poj104="poj104_clone_detection_models/codebert-poj104.py"
 SCRIPT_MAP_graphcodebert_poj104="poj104_clone_detection_models/graphcodebert-poj104.py"
-SCRIPT_MAP_plbart_poj104="poj104_clone_detection_models/plbartpoj104.py"
+SCRIPT_MAP_plbart_poj104="poj104_clone_detection_models/plbart-poj104.py"
 SCRIPT_MAP_polycoder_poj104="poj104_clone_detection_models/polycoder-poj104.py"
 SCRIPT_MAP_unixcoder_poj104="poj104_clone_detection_models/unixcoder-poj104.py"
 SCRIPT_MAP_t5_poj104="poj104_clone_detection_models/t5-poj104.py"
