@@ -1,128 +1,134 @@
-# --------------------------------------------------------------------------------
-# Installation (uncomment if running in a fresh environment like Google Colab)
-# --------------------------------------------------------------------------------
-!pip install transformers[torch] --quiet
-!pip install datasets --quiet
-!pip install accelerate -U --quiet
+"""Run CodeBERT clone-detection experiments on the KARNALIM benchmark."""
 
-from transformers import RobertaTokenizer, RobertaForSequenceClassification, Trainer, TrainingArguments, EarlyStoppingCallback
-import torch
-from torch.utils.data import Dataset
-import numpy as np
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-import json
-import logging
-import random
+from __future__ import annotations
 
-# Disable warnings and logging messages
-logging.disable(logging.WARNING)
+import argparse
 
-# Set seed for reproducibility
-def set_seed(seed: int = 42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import DataCollatorWithPadding
 
-set_seed(42)
+from small_code_models.data import build_datasets
+from small_code_models.metrics import print_metrics_table
+from small_code_models.trainer import CloneDetectionTrainer, get_training_args
 
-def load_code_snippets(json_path, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
-    with open(json_path, 'r', encoding='utf-8') as file:
-        data = json.load(file)
-    random.shuffle(data)
-    total = len(data)
-    train_end = int(total * train_ratio)
-    val_end = train_end + int(total * val_ratio)
+MODEL_ID = "microsoft/codebert-base"
+MODEL_NAME = "CodeBERT"
+DATASET_NAME = "karnalim"
 
-    train_data = data[:train_end]
-    val_data = data[train_end:val_end]
-    test_data = data[val_end:]
 
-    return train_data, val_data, test_data
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for a benchmark run.
 
-def prepare_dataset(code_snippets, tokenizer):
-    pairs, labels = [], []
-    for snippet in code_snippets:
-        code1 = snippet['code1']
-        code2 = snippet['code2']
-        label = snippet['score']
-        pairs.append((code1, code2))
-        labels.append(label)
-    return CloneDetectionDataset(tokenizer, pairs, labels)
+    Args:
+        None.
 
-class CloneDetectionDataset(Dataset):
-    def __init__(self, tokenizer, pairs, labels):
-        self.tokenizer = tokenizer
-        self.pairs = pairs
-        self.labels = labels
+    Returns:
+        Parsed command-line namespace.
 
-    def __len__(self):
-        return len(self.labels)
+    Raises:
+        SystemExit: Raised by argparse for invalid CLI usage.
+    """
+    parser = argparse.ArgumentParser(
+        description=f"Run {MODEL_NAME} on {DATASET_NAME} clone detection."
+    )
+    parser.add_argument(
+        "--data_dir",
+        required=True,
+        help="Directory with data.jsonl, train.txt, valid.txt, and test.txt",
+    )
+    parser.add_argument(
+        "--output_dir",
+        required=True,
+        help="Directory for model outputs and checkpoints",
+    )
+    parser.add_argument(
+        "--sample_pct",
+        type=float,
+        default=100.0,
+        help="Percentage of each split to use",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=3,
+        help="Number of training epochs",
+    )
+    return parser.parse_args()
 
-    def __getitem__(self, idx):
-        encoding = self.tokenizer(
-            self.pairs[idx][0],
-            self.pairs[idx][1],
-            padding='max_length',
-            truncation=True,
-            max_length=512,
-            return_tensors="pt"
-        )
-        item = {key: val.squeeze() for key, val in encoding.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=1)
-    return {
-        'accuracy': accuracy_score(labels, predictions),
-        'f1': f1_score(labels, predictions, average='binary'),
-        'precision': precision_score(labels, predictions, average='binary'),
-        'recall': recall_score(labels, predictions, average='binary'),
-    }
+def load_model_and_tokenizer() -> tuple[AutoTokenizer, AutoModelForSequenceClassification]:
+    """Create tokenizer and sequence-classification model for the configured model id.
 
-def main():
-    tokenizer = RobertaTokenizer.from_pretrained('microsoft/graphcodebert-base')
-    model = RobertaForSequenceClassification.from_pretrained('microsoft/graphcodebert-base', num_labels=2)
+    Args:
+        None.
 
-    train_data, val_data, test_data = load_code_snippets('/content/drive/MyDrive/datasets/karnalim/data.json', 0.70, 0.15, 0.15)
-    train_dataset = prepare_dataset(train_data, tokenizer)
-    val_dataset = prepare_dataset(val_data, tokenizer)
-    test_dataset = prepare_dataset(test_data, tokenizer)
+    Returns:
+        A ``(tokenizer, model)`` tuple.
 
-    training_args = TrainingArguments(
-        output_dir='results',
-        num_train_epochs=3,
-        per_device_train_batch_size=8,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir='./logs',
-        evaluation_strategy="steps",
-        eval_steps=500,
-        save_strategy="steps",
-        save_steps=500,
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
+    Raises:
+        OSError: If model assets cannot be resolved from Hugging Face.
+    """
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    config = AutoConfig.from_pretrained(MODEL_ID, num_labels=2)
+    if config.pad_token_id is None and tokenizer.pad_token_id is not None:
+        config.pad_token_id = tokenizer.pad_token_id
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID,
+        config=config,
+        ignore_mismatched_sizes=True,
+    )
+    return tokenizer, model
+
+
+def main() -> None:
+    """Run training and report test metrics.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If training or evaluation fails.
+    """
+    args = parse_args()
+    tokenizer, model = load_model_and_tokenizer()
+
+    train_ds, val_ds, test_ds = build_datasets(
+        args.data_dir,
+        tokenizer,
+        sample_pct=args.sample_pct,
     )
 
-    trainer = Trainer(
+    trainer = CloneDetectionTrainer(
         model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
+        args=get_training_args(
+            args.output_dir,
+            num_train_epochs=args.epochs,
+            fp16=False,
+        ),
+        data_collator=DataCollatorWithPadding(
+            tokenizer=tokenizer,
+            pad_to_multiple_of=8,
+        ),
     )
+    test_results = trainer.run(train_ds, val_ds, test_ds)
 
-    trainer.train()
-    test_results = trainer.evaluate(test_dataset)
+    metrics = {
+        "test": {
+            "accuracy": test_results.get("eval_accuracy", 0.0),
+            "precision": test_results.get("eval_precision", 0.0),
+            "recall": test_results.get("eval_recall", 0.0),
+            "f1": test_results.get("eval_f1", 0.0),
+        }
+    }
+    print_metrics_table(metrics)
 
-    print(f"Accuracy: {test_results['eval_accuracy']:.4f}")
-    print(f"Precision: {test_results['eval_precision']:.4f}")
-    print(f"Recall: {test_results['eval_recall']:.4f}")
-    print(f"F1 Score: {test_results['eval_f1']:.4f}")
 
 if __name__ == "__main__":
     main()

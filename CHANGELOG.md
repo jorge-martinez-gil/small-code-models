@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.0] - 2026-05-07
+
+### Added
+- `small_code_models/` shared Python library (data, metrics, trainer modules).
+- `pyproject.toml` for proper Python packaging (`pip install -e .`).
+- `notebooks/quick_start.ipynb` — Google Colab-ready interactive demo.
+- `scripts/run_all_benchmarks.sh` — single-command full reproduction.
+- `docs/RESULTS.md` — detailed results tables and analysis notes.
+- CI workflow via GitHub Actions (`.github/workflows/ci.yml`).
+- Unit tests in `tests/`.
+- CLI arguments (`--data_dir`, `--output_dir`) to all evaluation scripts.
+
+### Changed
+- All evaluation scripts refactored to import shared utilities from `small_code_models/`, removing ~100 lines of duplication per script.
+- README.md significantly expanded with results tables, repository structure diagram, Quick Start, Related Work, and more badges.
+
 ## [1.0.0] - 2025
 
 ### 🎉 Initial Release
