@@ -110,21 +110,36 @@ def _build_pairs_for_problems(
         for left_id, right_id in itertools.combinations(problem_to_ids[problem_name], 2)
     ]
 
-    possible_negative_pairs = [
-        (left_id, right_id, 0)
+    possible_negative_pairs = sum(
+        len(problem_to_ids[left_problem]) * len(problem_to_ids[right_problem])
         for left_problem, right_problem in itertools.combinations(problem_names, 2)
-        for left_id in problem_to_ids[left_problem]
-        for right_id in problem_to_ids[right_problem]
-    ]
+    )
     negative_target = min(
         int(len(positive_pairs) * negative_ratio),
-        len(possible_negative_pairs),
+        possible_negative_pairs,
     )
-    negative_pairs = (
-        rng.sample(possible_negative_pairs, negative_target)
-        if negative_target
-        else []
-    )
+    negative_pairs: list[tuple[str, str, int]] = []
+    if negative_target:
+        if negative_target == possible_negative_pairs:
+            negative_pairs = [
+                (left_id, right_id, 0)
+                for left_problem, right_problem in itertools.combinations(problem_names, 2)
+                for left_id in problem_to_ids[left_problem]
+                for right_id in problem_to_ids[right_problem]
+            ]
+        else:
+            seen: set[tuple[str, str]] = set()
+            while len(negative_pairs) < negative_target:
+                left_problem, right_problem = rng.sample(problem_names, 2)
+                if left_problem > right_problem:
+                    left_problem, right_problem = right_problem, left_problem
+                left_id = rng.choice(problem_to_ids[left_problem])
+                right_id = rng.choice(problem_to_ids[right_problem])
+                key = (left_id, right_id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                negative_pairs.append((left_id, right_id, 0))
 
     pairs = positive_pairs + negative_pairs
     rng.shuffle(pairs)
