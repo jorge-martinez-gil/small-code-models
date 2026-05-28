@@ -13,6 +13,16 @@ from small_code_models.metrics import compute_metrics
 from small_code_models.reproducibility import set_reproducible_seed
 
 
+class _DeferredEvalDataset:
+    """Placeholder replaced by ``CloneDetectionTrainer.run`` before training."""
+
+    def __len__(self) -> int:
+        return 0
+
+    def __getitem__(self, index: int) -> Any:
+        raise IndexError(index)
+
+
 def _training_argument_name(preferred: str, fallback: str) -> str:
     parameters = inspect.signature(TrainingArguments.__init__).parameters
     if preferred in parameters:
@@ -22,6 +32,15 @@ def _training_argument_name(preferred: str, fallback: str) -> str:
 
 def _training_argument_parameters() -> set[str]:
     return set(inspect.signature(TrainingArguments.__init__).parameters)
+
+
+def _uses_evaluation_strategy(training_args: Any) -> bool:
+    strategy = getattr(training_args, "eval_strategy", None)
+    if strategy is None:
+        strategy = getattr(training_args, "evaluation_strategy", None)
+    if strategy is None:
+        return False
+    return str(getattr(strategy, "value", strategy)).lower() != "no"
 
 
 def get_training_args(output_dir: str, **kwargs: Any) -> TrainingArguments:
@@ -75,6 +94,12 @@ class CloneDetectionTrainer(Trainer):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("compute_metrics", compute_metrics)
+        if kwargs.get("eval_dataset") is None:
+            trainer_args = kwargs.get("args")
+            if trainer_args is None and len(args) >= 2:
+                trainer_args = args[1]
+            if trainer_args is not None and _uses_evaluation_strategy(trainer_args):
+                kwargs["eval_dataset"] = _DeferredEvalDataset()
         super().__init__(*args, **kwargs)
 
     def run(
