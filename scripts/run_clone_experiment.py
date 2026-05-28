@@ -114,6 +114,8 @@ def main() -> None:
     trainer = CloneDetectionTrainer(
         model=model,
         args=get_training_args(args.output_dir, **training_overrides),
+        train_dataset=train_ds,
+        eval_dataset=val_ds,
         data_collator=DataCollatorWithPadding(
             tokenizer=tokenizer,
             pad_to_multiple_of=8,
