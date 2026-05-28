@@ -70,6 +70,13 @@ This document provides a reproducible summary of clone-detection performance for
 - Random seed: 42 for all benchmark runs.
 - Hardware baseline: single modern NVIDIA GPU (24 GB VRAM class), 8 CPU workers, 32 GB RAM.
 - Sample percentage: 100% of each released split unless explicitly overridden with CLI options.
-- Metrics are reported with binary precision/recall/F1 and accuracy.
+- Expanded model entries can be run with `scripts/run_clone_experiment.py`.
+- CodeNet/CLCDSA-style corpora can be normalized with `scripts/prepare_pair_dataset.py`.
+- Metrics are reported with accuracy, balanced accuracy, precision, recall, F1, MCC, ROC-AUC, PR-AUC, specificity, false-positive/false-negative rates, Brier score, log loss, expected calibration error, support, and confusion counts.
+- Each run writes `metrics.json`, `predictions.jsonl`, and `run_manifest.json` to the configured output directory.
+- Prediction files include stable example IDs, pair IDs, and snippet hashes when generated through the shared dataset loaders, so model comparisons can be aligned by evaluated example rather than by row position alone.
+- `metrics.json` includes bootstrap confidence intervals; use the same `--bootstrap_resamples` value across all model/dataset pairs when preparing final tables.
+- `run_manifest.json` records dataset file hashes, split diagnostics, package versions, CUDA metadata, training arguments, and Git revision.
+- `scripts/summarize_results.py` can aggregate completed run folders into `summary.csv` and `summary.md`.
 
 For full statistical analysis, confidence intervals, and exact final scores, see the paper: https://doi.org/10.48550/arXiv.2506.10995.

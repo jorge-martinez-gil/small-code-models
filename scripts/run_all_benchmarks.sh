@@ -7,8 +7,20 @@ if [[ $# -lt 1 ]]; then
 fi
 
 DATASETS_ROOT="$1"
-RESULTS_ROOT="results"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+RESULTS_ROOT="${RESULTS_ROOT:-results}"
+SAMPLE_PCT="${SAMPLE_PCT:-100.0}"
+EPOCHS="${EPOCHS:-3}"
+SEED="${SEED:-42}"
+MAX_LENGTH="${MAX_LENGTH:-512}"
+BOOTSTRAP_RESAMPLES="${BOOTSTRAP_RESAMPLES:-1000}"
+STRICT_DATA="${STRICT_DATA:-0}"
 mkdir -p "$RESULTS_ROOT"
+
+STRICT_FLAG=()
+if [[ "$STRICT_DATA" == "1" || "$STRICT_DATA" == "true" ]]; then
+  STRICT_FLAG=(--strict_data)
+fi
 
 MODELS=(codebert graphcodebert plbart polycoder unixcoder t5)
 DATASETS=(bcb gcj karnalim poj104 poolc)
@@ -58,7 +70,15 @@ for model in "${MODELS[@]}"; do
     output_dir="${RESULTS_ROOT}/${model}_${dataset}"
 
     echo "[RUN] model=${model} dataset=${dataset}"
-    if python "$script" --data_dir "$data_dir" --output_dir "$output_dir"; then
+    if "$PYTHON_BIN" "$script" \
+      --data_dir "$data_dir" \
+      --output_dir "$output_dir" \
+      --sample_pct "$SAMPLE_PCT" \
+      --epochs "$EPOCHS" \
+      --seed "$SEED" \
+      --max_length "$MAX_LENGTH" \
+      --bootstrap_resamples "$BOOTSTRAP_RESAMPLES" \
+      "${STRICT_FLAG[@]}"; then
       SUMMARY+=("${model}|${dataset}|OK|${output_dir}")
     else
       SUMMARY+=("${model}|${dataset}|FAIL|${output_dir}")
@@ -69,8 +89,13 @@ done
 echo
 echo "Summary"
 printf '%-14s %-10s %-8s %s\n' "Model" "Dataset" "Status" "Output"
-printf '%-14s %-10s %-8s %s\n' "--------------" "----------" "--------" "---------------------------"
+printf '%-14s %-10s %-8s %s\n' \
+  "--------------" "----------" "--------" "---------------------------"
 for row in "${SUMMARY[@]}"; do
   IFS='|' read -r model dataset status output <<< "$row"
   printf '%-14s %-10s %-8s %s\n' "$model" "$dataset" "$status" "$output"
 done
+
+if command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  "$PYTHON_BIN" scripts/summarize_results.py "$RESULTS_ROOT"
+fi

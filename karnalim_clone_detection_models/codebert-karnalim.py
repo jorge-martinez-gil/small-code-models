@@ -53,6 +53,34 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="Number of training epochs",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for training, sampling, and bootstrap intervals",
+    )
+    parser.add_argument(
+        "--max_length",
+        type=int,
+        default=512,
+        help="Maximum token length for each code pair",
+    )
+    parser.add_argument(
+        "--strict_data",
+        action="store_true",
+        help="Fail fast on malformed pair rows, missing snippets, or invalid labels",
+    )
+    parser.add_argument(
+        "--no_artifacts",
+        action="store_true",
+        help="Disable metrics.json, predictions.jsonl, and run_manifest.json outputs",
+    )
+    parser.add_argument(
+        "--bootstrap_resamples",
+        type=int,
+        default=1000,
+        help="Bootstrap resamples used for confidence intervals",
+    )
     return parser.parse_args()
 
 
@@ -103,6 +131,8 @@ def main() -> None:
         args.data_dir,
         tokenizer,
         sample_pct=args.sample_pct,
+        max_length=args.max_length,
+        strict=args.strict_data,
     )
 
     trainer = CloneDetectionTrainer(
@@ -111,20 +141,37 @@ def main() -> None:
             args.output_dir,
             num_train_epochs=args.epochs,
             fp16=False,
+            seed=args.seed,
+            data_seed=args.seed,
         ),
         data_collator=DataCollatorWithPadding(
             tokenizer=tokenizer,
             pad_to_multiple_of=8,
         ),
     )
-    test_results = trainer.run(train_ds, val_ds, test_ds)
+    test_results = trainer.run(
+        train_ds,
+        val_ds,
+        test_ds,
+        run_metadata={
+            "model_id": MODEL_ID,
+            "model_name": MODEL_NAME,
+            "dataset_name": DATASET_NAME,
+            "sample_pct": args.sample_pct,
+            "epochs": args.epochs,
+            "seed": args.seed,
+            "max_length": args.max_length,
+            "strict_data": args.strict_data,
+        },
+        write_artifacts=not args.no_artifacts,
+        bootstrap_resamples=args.bootstrap_resamples,
+    )
 
     metrics = {
         "test": {
-            "accuracy": test_results.get("eval_accuracy", 0.0),
-            "precision": test_results.get("eval_precision", 0.0),
-            "recall": test_results.get("eval_recall", 0.0),
-            "f1": test_results.get("eval_f1", 0.0),
+            key[5:]: value
+            for key, value in test_results.items()
+            if key.startswith("eval_")
         }
     }
     print_metrics_table(metrics)
