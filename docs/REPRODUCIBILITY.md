@@ -18,11 +18,14 @@ Automatically retrieve public datasets with stable sources first:
 python scripts/download_datasets.py --dataset all --output_root datasets --skip_existing
 ```
 
-This currently downloads CodeXGLUE BigCloneBench as `datasets/bcb` and
-CodeXGLUE POJ-104 as `datasets/poj104`. POJ-104 is officially a retrieval task;
-the downloader stores the snippets and creates deterministic binary pairs for
-this repository's pair-classification trainers. The source and conversion
-settings are written to `dataset_source.json`.
+This currently downloads CodeXGLUE BigCloneBench as `datasets/bcb`, CodeXGLUE
+POJ-104 as `datasets/poj104`, and PoolC as `datasets/poolc`. POJ-104 is
+officially a retrieval task; the downloader stores the snippets and creates
+deterministic binary pairs for this repository's pair-classification trainers.
+PoolC is downloaded from Hugging Face pair rows; the official `train` split is
+kept intact and the official `val` split is deterministically divided into
+validation and test rows. The source and conversion settings are written to
+`dataset_source.json`.
 
 Run with `--strict_data` when preparing final results. This fails fast on
 malformed rows, missing snippet IDs, and labels outside `{0, 1}`.

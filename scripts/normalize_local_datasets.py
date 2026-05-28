@@ -25,7 +25,6 @@ SPLITS = {
 
 SUPPORTED_DATASETS = ("gcj", "karnalim")
 MANUAL_DATASETS = {
-    "poolc": "Only data.txt is present locally; download/extract the PoolC files first.",
     "codenet": "Use scripts/prepare_pair_dataset.py on problem-directory source files.",
     "clcdsa": "Use scripts/prepare_pair_dataset.py on problem-directory source files.",
     "semanticclonebench": "Convert the official released pairs to pair_jsonl first.",

@@ -221,13 +221,14 @@ Currently automated sources:
 |---|---|---|
 | `bcb` | Hugging Face `google/code_x_glue_cc_clone_detection_big_clone_bench` | Stored directly as `pair_jsonl`. |
 | `poj104` | Hugging Face `google/code_x_glue_cc_clone_detection_poj104` | Official task is retrieval; downloader builds deterministic binary pairs for this repository. |
+| `poolc` | Hugging Face `PoolC/5-fold-clone-detection-600k-5fold` | Stored as `pair_jsonl`; the Hugging Face `val` split is deterministically divided into validation and test rows. |
 
 For POJ-104, use `--poj_pairs_per_label all` to materialize exhaustive
 positive pairs. The default samples 1000 positive pairs per label per split and
 the same number of negatives, which is much smaller and suitable for smoke
 tests or constrained runs.
 
-GCJ, Karnalim, PoolC, CodeNet, CLCDSA, SemanticCloneBench, and GPTCloneBench
+GCJ, Karnalim, CodeNet, CLCDSA, SemanticCloneBench, and GPTCloneBench
 still require manual source acquisition or conversion because no stable public
 direct-download endpoint is registered in this repository.
 
@@ -247,7 +248,7 @@ Currently supported local conversions:
 | `gcj` | `train.txt`, `valid.txt`, `test.txt`, plus `googlejam4_src/` files | Adds `data.jsonl`, converts `-1/1` labels to `0/1`, backs up raw splits as `raw_*.txt`. |
 | `karnalim` | `training.json`, `validation.json`, `test.json` | Adds `data.jsonl`, `train.txt`, `valid.txt`, `test.txt`. |
 
-PoolC, CodeNet, CLCDSA, SemanticCloneBench, and GPTCloneBench still need their
+CodeNet, CLCDSA, SemanticCloneBench, and GPTCloneBench still need their
 actual source files or official pair files before they can be normalized.
 
 ## Run Artifacts

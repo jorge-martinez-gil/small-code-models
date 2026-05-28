@@ -32,6 +32,11 @@ AUTO_DATASETS: dict[str, dict[str, str]] = {
             "Code-Code/Clone-detection-POJ-104"
         ),
     },
+    "poolc": {
+        "display_name": "PoolC",
+        "source": "PoolC/5-fold-clone-detection-600k-5fold",
+        "homepage": "https://huggingface.co/datasets/PoolC/5-fold-clone-detection-600k-5fold",
+    },
 }
 
 DATASET_ALIASES = {
@@ -40,12 +45,12 @@ DATASET_ALIASES = {
     "poj": "poj104",
     "poj-104": "poj104",
     "codexglue_poj104": "poj104",
+    "pool-c": "poolc",
 }
 
 MANUAL_DATASETS: dict[str, str] = {
     "gcj": "No stable public direct-download endpoint is registered here.",
     "karnalim": "No stable public direct-download endpoint is registered here.",
-    "poolc": "No stable public direct-download endpoint is registered here.",
     "codenet": "Use the official Project CodeNet release, then prepare subsets locally.",
     "clcdsa": "Use the official release, then prepare problem directories locally.",
     "semanticclonebench": "Convert the official released pairs to pair_jsonl locally.",
@@ -419,6 +424,156 @@ def download_poj104(
     return report
 
 
+def download_poolc(
+    output_dir: str | Path,
+    *,
+    overwrite: bool = False,
+    hf_cache_dir: str | Path | None = None,
+    include_diagnostics: bool = False,
+) -> dict[str, Any]:
+    """Download PoolC pair rows and normalize to pair_jsonl layout.
+
+    The Hugging Face release exposes ``train`` and ``val`` splits. This
+    repository requires train/validation/test files, so the converter keeps the
+    official training split intact and deterministically alternates rows from
+    ``val`` into validation and test.
+    """
+    destination = Path(output_dir)
+    _check_can_write(destination, overwrite)
+    load_dataset = _require_hf_datasets()
+    try:
+        from huggingface_hub import hf_hub_url, list_repo_files
+    except ImportError as exc:  # pragma: no cover - installed with datasets
+        raise RuntimeError(
+            "PoolC download requires huggingface_hub, which is installed with "
+            "the Hugging Face datasets package."
+        ) from exc
+
+    spec = AUTO_DATASETS["poolc"]
+    repo_files = list_repo_files(spec["source"], repo_type="dataset")
+    source_files = {
+        "train": sorted(
+            file_name
+            for file_name in repo_files
+            if file_name.startswith("data/train-") and file_name.endswith(".parquet")
+        ),
+        "val": sorted(
+            file_name
+            for file_name in repo_files
+            if file_name.startswith("data/val-") and file_name.endswith(".parquet")
+        ),
+    }
+    if not source_files["train"] or not source_files["val"]:
+        raise ValueError(
+            "PoolC source is missing expected data/train-*.parquet or "
+            "data/val-*.parquet files."
+        )
+    data_files = {
+        split_name: [
+            hf_hub_url(spec["source"], filename=file_name, repo_type="dataset")
+            for file_name in file_names
+        ]
+        for split_name, file_names in source_files.items()
+    }
+    split_rows = {"train": 0, "validation": 0, "test": 0}
+    source_split_rows = {"train": 0, "val": 0}
+    label_counts = {
+        "train": {"0": 0, "1": 0},
+        "validation": {"0": 0, "1": 0},
+        "test": {"0": 0, "1": 0},
+    }
+    snippet_hashes: dict[str, str] = {}
+    conflict_count = 0
+
+    def write_pair(
+        row: Mapping[str, Any],
+        split_name: str,
+        split_handle: Any,
+        data_handle: Any,
+    ) -> None:
+        nonlocal conflict_count
+        left_code = str(row["code1"])
+        right_code = str(row["code2"])
+        label = _label_to_int(row["similar"])
+        left_id = f"poolc:{_text_sha256(left_code)}"
+        right_id = f"poolc:{_text_sha256(right_code)}"
+
+        for snippet_id, code in ((left_id, left_code), (right_id, right_code)):
+            digest = _text_sha256(code)
+            previous_digest = snippet_hashes.get(snippet_id)
+            if previous_digest is None:
+                snippet_hashes[snippet_id] = digest
+                data_handle.write(json.dumps({"idx": snippet_id, "func": code}, sort_keys=True))
+                data_handle.write("\n")
+            elif previous_digest != digest:
+                conflict_count += 1
+
+        split_handle.write(f"{left_id}\t{right_id}\t{label}\n")
+        split_rows[split_name] += 1
+        label_counts[split_name][str(label)] += 1
+
+    load_kwargs = {"cache_dir": None if hf_cache_dir is None else str(hf_cache_dir)}
+    with (destination / "data.jsonl").open("w", encoding="utf-8") as data_handle:
+        train_dataset = load_dataset(
+            "parquet",
+            data_files={"train": data_files["train"]},
+            split="train",
+            streaming=True,
+            **load_kwargs,
+        )
+        with (destination / "train.txt").open("w", encoding="utf-8") as train_handle:
+            for row in train_dataset:
+                write_pair(row, "train", train_handle, data_handle)
+                source_split_rows["train"] += 1
+
+        val_dataset = load_dataset(
+            "parquet",
+            data_files={"val": data_files["val"]},
+            split="val",
+            streaming=True,
+            **load_kwargs,
+        )
+        with (destination / "valid.txt").open(
+            "w",
+            encoding="utf-8",
+        ) as validation_handle, (destination / "test.txt").open(
+            "w",
+            encoding="utf-8",
+        ) as test_handle:
+            for row_index, row in enumerate(val_dataset):
+                split_name = "validation" if row_index % 2 == 0 else "test"
+                split_handle = validation_handle if split_name == "validation" else test_handle
+                write_pair(row, split_name, split_handle, data_handle)
+                source_split_rows["val"] += 1
+
+    if conflict_count:
+        raise ValueError(
+            f"Encountered {conflict_count} conflicting PoolC snippet ids while "
+            "normalizing the dataset."
+        )
+
+    report = {
+        "dataset_key": "poolc",
+        "display_name": spec["display_name"],
+        "source": spec["source"],
+        "homepage": spec["homepage"],
+        "source_files": source_files,
+        "layout": "pair_jsonl",
+        "source_format": "hf_code_pair_rows",
+        "output_dir": str(destination),
+        "snippets": len(snippet_hashes),
+        "split_rows": split_rows,
+        "source_split_rows": source_split_rows,
+        "label_counts": label_counts,
+        "validation_test_source_split": "val",
+        "validation_test_strategy": "alternating_even_odd_rows",
+    }
+    if include_diagnostics:
+        report["diagnostics"] = inspect_dataset_directory(destination)
+    _write_json(destination / "dataset_source.json", report)
+    return report
+
+
 def download_dataset(
     dataset_key: str,
     output_root: str | Path,
@@ -451,6 +606,13 @@ def download_dataset(
             pairs_per_label=poj_pairs_per_label,
             negative_ratio=poj_negative_ratio,
             seed=seed,
+            include_diagnostics=include_diagnostics,
+        )
+    if key == "poolc":
+        return download_poolc(
+            output_dir,
+            overwrite=overwrite,
+            hf_cache_dir=hf_cache_dir,
             include_diagnostics=include_diagnostics,
         )
     raise KeyError(f"Dataset {dataset_key!r} is not registered for automatic download.")
