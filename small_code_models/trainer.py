@@ -12,6 +12,12 @@ from small_code_models.artifacts import write_evaluation_artifacts
 from small_code_models.metrics import compute_metrics
 from small_code_models.reproducibility import set_reproducible_seed
 
+_TRAINER_INIT_PARAMETER_NAMES = [
+    parameter_name
+    for parameter_name in inspect.signature(Trainer.__init__).parameters
+    if parameter_name != "self"
+]
+
 
 class _DeferredEvalDataset:
     """Placeholder replaced by ``CloneDetectionTrainer.run`` before training."""
@@ -32,6 +38,41 @@ def _training_argument_name(preferred: str, fallback: str) -> str:
 
 def _training_argument_parameters() -> set[str]:
     return set(inspect.signature(TrainingArguments.__init__).parameters)
+
+
+def _trainer_init_positional_index(name: str) -> int | None:
+    try:
+        return _TRAINER_INIT_PARAMETER_NAMES.index(name)
+    except ValueError:
+        return None
+
+
+def _get_trainer_init_argument(
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    name: str,
+) -> Any:
+    if name in kwargs:
+        return kwargs[name]
+    positional_index = _trainer_init_positional_index(name)
+    if positional_index is not None and len(args) > positional_index:
+        return args[positional_index]
+    return None
+
+
+def _set_trainer_init_argument(
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    name: str,
+    value: Any,
+) -> tuple[tuple[Any, ...], dict[str, Any]]:
+    positional_index = _trainer_init_positional_index(name)
+    if positional_index is not None and len(args) > positional_index:
+        updated_args = list(args)
+        updated_args[positional_index] = value
+        return tuple(updated_args), kwargs
+    kwargs[name] = value
+    return args, kwargs
 
 
 def _uses_evaluation_strategy(training_args: Any) -> bool:
@@ -94,12 +135,15 @@ class CloneDetectionTrainer(Trainer):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("compute_metrics", compute_metrics)
-        if kwargs.get("eval_dataset") is None:
-            trainer_args = kwargs.get("args")
-            if trainer_args is None and len(args) >= 2:
-                trainer_args = args[1]
+        if _get_trainer_init_argument(args, kwargs, "eval_dataset") is None:
+            trainer_args = _get_trainer_init_argument(args, kwargs, "args")
             if trainer_args is not None and _uses_evaluation_strategy(trainer_args):
-                kwargs["eval_dataset"] = _DeferredEvalDataset()
+                args, kwargs = _set_trainer_init_argument(
+                    args,
+                    kwargs,
+                    "eval_dataset",
+                    _DeferredEvalDataset(),
+                )
         super().__init__(*args, **kwargs)
 
     def run(

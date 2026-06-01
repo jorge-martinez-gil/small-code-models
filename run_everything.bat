@@ -9,7 +9,7 @@ rem Common overrides:
 rem   set RUN_BENCHMARKS=0
 rem   set MODELS=codebert graphcodebert unixcoder
 rem   set BENCHMARKS=bcb poj104
-rem   set SAMPLE_PCT=1.0
+rem   set SAMPLE_PCT=100.0
 rem   run_everything.bat
 
 cd /d "%~dp0"
@@ -54,7 +54,7 @@ if not defined BENCHMARKS set "BENCHMARKS=bcb poj104 gcj karnalim poolc codenet 
 
 if not defined EPOCHS set "EPOCHS=3"
 if not defined SEED set "SEED=42"
-if not defined SAMPLE_PCT set "SAMPLE_PCT=100.0"
+if not defined SAMPLE_PCT set "SAMPLE_PCT=1.0"
 if not defined MAX_LENGTH set "MAX_LENGTH=512"
 if not defined TRAIN_BATCH_SIZE set "TRAIN_BATCH_SIZE=8"
 if not defined EVAL_BATCH_SIZE set "EVAL_BATCH_SIZE=8"
@@ -155,13 +155,14 @@ if "%INSPECT_DATASETS%"=="1" (
   if "%STRICT_DATA%"=="1" set "STRICT_ARG=--strict_data"
   for %%B in (%BENCHMARKS%) do (
     set "DATA_DIR=%DATASETS_ROOT%\%%B"
-    if exist "!DATA_DIR!\data.jsonl" (
+    call :missing_normalized_dataset_files "!DATA_DIR!"
+    if not defined MISSING_FILES (
       call %PYTHON_CMD% scripts\inspect_dataset.py "!DATA_DIR!" ^
         !STRICT_ARG! ^
         --output "!DATA_DIR!\diagnostics.json"
       if errorlevel 1 goto :fail
     ) else (
-      echo [SKIP] diagnostics for %%B: missing "!DATA_DIR!\data.jsonl"
+      echo [SKIP] diagnostics for %%B: missing !MISSING_FILES!
     )
   )
 )
@@ -178,7 +179,8 @@ if "%RUN_BENCHMARKS%"=="1" (
 
   for %%B in (%BENCHMARKS%) do (
     set "DATA_DIR=%DATASETS_ROOT%\%%B"
-    if exist "!DATA_DIR!\data.jsonl" (
+    call :missing_normalized_dataset_files "!DATA_DIR!"
+    if not defined MISSING_FILES (
       for %%M in (%MODELS%) do (
         set "OUTPUT_DIR=%RESULTS_ROOT%\%%M_%%B"
         echo [RUN] model=%%M benchmark=%%B
@@ -203,7 +205,7 @@ if "%RUN_BENCHMARKS%"=="1" (
         )
       )
     ) else (
-      echo [SKIP] benchmark=%%B: missing "!DATA_DIR!\data.jsonl"
+      echo [SKIP] benchmark=%%B: missing !MISSING_FILES!
     )
   )
 
@@ -243,6 +245,19 @@ if "%RUN_COMPARISONS%"=="1" (
 echo == Done ==
 echo Datasets: %DATASETS_ROOT%
 echo Results:  %RESULTS_ROOT%
+exit /b 0
+
+:missing_normalized_dataset_files
+set "MISSING_FILES="
+for %%F in (data.jsonl train.txt valid.txt test.txt) do (
+  if not exist "%~1\%%F" (
+    if defined MISSING_FILES (
+      set "MISSING_FILES=!MISSING_FILES!, %~1\%%F"
+    ) else (
+      set "MISSING_FILES=%~1\%%F"
+    )
+  )
+)
 exit /b 0
 
 :python_error

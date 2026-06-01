@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--sample_pct",
         type=float,
-        default=100.0,
+        default=1.0,
         help="Percentage of each split to use",
     )
     parser.add_argument(

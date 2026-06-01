@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data_dir", help="Directory with data.jsonl and split files")
     parser.add_argument("--output_dir", help="Directory for outputs and artifacts")
     parser.add_argument("--model_path", help="Optional local checkpoint path")
-    parser.add_argument("--sample_pct", type=float, default=100.0)
+    parser.add_argument("--sample_pct", type=float, default=1.0)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_length", type=int, default=512)

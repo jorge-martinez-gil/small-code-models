@@ -13,6 +13,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from small_code_models.data import inspect_dataset_directory
 
+REQUIRED_DATASET_FILES = ("data.jsonl", "train.txt", "valid.txt", "test.txt")
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -36,8 +38,19 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    data_dir = Path(args.data_dir)
+    missing_files = [
+        str(data_dir / file_name)
+        for file_name in REQUIRED_DATASET_FILES
+        if not (data_dir / file_name).is_file()
+    ]
+    if missing_files:
+        raise SystemExit(
+            "Missing normalized dataset files: " + ", ".join(missing_files)
+        )
+
     diagnostics = inspect_dataset_directory(
-        args.data_dir,
+        data_dir,
         sample_pct=args.sample_pct,
         strict=args.strict_data,
     )

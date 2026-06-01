@@ -98,14 +98,14 @@ chmod +x run_everything.sh
 Both scripts install dependencies, download automatic datasets into `datasets/`,
 normalize supported local raw datasets, write dataset diagnostics, run the
 benchmark matrix, summarize results, and compute pairwise comparisons where
-predictions exist. They auto-detect `.venv`, the bundled Codex Python runtime,
-`py -3`, or `python`; set `PYTHON_CMD` only when you want to force a specific
-interpreter.
+predictions exist. Benchmark runs default to `SAMPLE_PCT=1.0` so each model uses
+a 1% deterministic subsample by default; set `SAMPLE_PCT=100.0` for full-data
+runs. They auto-detect `.venv`, the bundled Codex Python runtime, `py -3`, or
+`python`; set `PYTHON_CMD` only when you want to force a specific interpreter.
 
-Useful smoke-test override:
+Useful shortest-run override:
 
 ```bat
-set SAMPLE_PCT=1.0
 set EPOCHS=1
 set MODELS=codebert
 set BENCHMARKS=bcb poj104
@@ -113,7 +113,7 @@ run_everything.bat
 ```
 
 ```bash
-SAMPLE_PCT=1.0 EPOCHS=1 MODELS=codebert BENCHMARKS="bcb poj104" ./run_everything.sh
+EPOCHS=1 MODELS=codebert BENCHMARKS="bcb poj104" ./run_everything.sh
 ```
 
 To only download and inspect datasets:
@@ -186,7 +186,7 @@ Each benchmark script supports:
 | Argument | Purpose |
 |---|---|
 | `--seed` | Seeds training, sampling, and bootstrap intervals. |
-| `--sample_pct` | Runs a deterministic subsample for smoke tests or ablations. |
+| `--sample_pct` | Runs a deterministic subsample; defaults to `1.0` for resource-limited fine-tuning. |
 | `--max_length` | Sets tokenizer truncation length for each code pair. |
 | `--strict_data` | Fails on malformed rows, missing snippets, or invalid labels. |
 | `--bootstrap_resamples` | Controls confidence-interval precision and runtime. |

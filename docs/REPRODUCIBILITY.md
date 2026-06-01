@@ -63,6 +63,10 @@ package.
 
 ## Recommended Final Run
 
+The automation defaults to `SAMPLE_PCT=1.0` for resource-constrained runs. For
+final paper-quality runs, override that default with `--sample_pct 100` or
+`SAMPLE_PCT=100.0`.
+
 ```bash
 python bcb_detection_models/codebert-bcb-01.py \
     --data_dir /path/to/bcb \
@@ -173,7 +177,7 @@ Before submission, confirm that:
 2. Dataset SHA-256 hashes are present in every `run_manifest.json`.
 3. The Git commit in every manifest points to the submitted code snapshot.
 4. Package, CUDA, and hardware metadata are present.
-5. No run used `--sample_pct` below 100 unless it is explicitly labeled as a smoke test or ablation.
+5. No run used `--sample_pct` below 100 unless it is explicitly labeled as a resource-constrained run, smoke test, or ablation.
 6. Tables were generated from saved artifacts, not copied from console logs.
 7. Generated/problem-derived benchmark subsets include `pair_build_report.json`.
 8. Cross-split pair/snippet overlap diagnostics have been checked and explained.

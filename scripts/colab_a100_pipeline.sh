@@ -34,7 +34,7 @@ BENCHMARKS="${BENCHMARKS:-bcb poj104 gcj karnalim poolc codenet semanticcloneben
 
 EPOCHS="${EPOCHS:-3}"
 SEED="${SEED:-42}"
-SAMPLE_PCT="${SAMPLE_PCT:-100.0}"
+SAMPLE_PCT="${SAMPLE_PCT:-1.0}"
 MAX_LENGTH="${MAX_LENGTH:-512}"
 TRAIN_BATCH_SIZE="${TRAIN_BATCH_SIZE:-16}"
 EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE:-32}"
@@ -56,6 +56,25 @@ COMPARE_CANDIDATES="${COMPARE_CANDIDATES:-graphcodebert unixcoder codet5_small}"
 RUN_COMPARISONS="${RUN_COMPARISONS:-1}"
 
 mkdir -p "$DATASETS_ROOT" "$RESULTS_ROOT"
+
+missing_normalized_dataset_files() {
+  local data_dir="$1"
+  local file_name
+  local missing=""
+  for file_name in data.jsonl train.txt valid.txt test.txt; do
+    if [[ ! -f "${data_dir}/${file_name}" ]]; then
+      if [[ -n "$missing" ]]; then
+        missing="${missing}, "
+      fi
+      missing="${missing}${data_dir}/${file_name}"
+    fi
+  done
+  if [[ -n "$missing" ]]; then
+    printf '%s\n' "$missing"
+    return 0
+  fi
+  return 1
+}
 
 echo "== Environment =="
 date -u
@@ -116,8 +135,8 @@ if [[ "$STRICT_DATA" == "1" ]]; then
 fi
 for benchmark in $BENCHMARKS; do
   data_dir="${DATASETS_ROOT}/${benchmark}"
-  if [[ ! -f "${data_dir}/data.jsonl" ]]; then
-    echo "[SKIP] diagnostics for ${benchmark}: missing normalized dataset"
+  if missing_files="$(missing_normalized_dataset_files "$data_dir")"; then
+    echo "[SKIP] diagnostics for ${benchmark}: missing ${missing_files}"
     continue
   fi
   python scripts/inspect_dataset.py "$data_dir" \
@@ -148,8 +167,8 @@ printf 'model\tbenchmark\tstatus\toutput_dir\n' > "$status_file"
 
 for benchmark in $BENCHMARKS; do
   data_dir="${DATASETS_ROOT}/${benchmark}"
-  if [[ ! -f "${data_dir}/data.jsonl" ]]; then
-    echo "[SKIP] benchmark=${benchmark}: missing normalized dataset at ${data_dir}"
+  if missing_files="$(missing_normalized_dataset_files "$data_dir")"; then
+    echo "[SKIP] benchmark=${benchmark}: missing ${missing_files}"
     continue
   fi
 

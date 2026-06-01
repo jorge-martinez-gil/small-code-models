@@ -8,7 +8,8 @@ set -u
 # Common overrides:
 #   RUN_BENCHMARKS=0 ./run_everything.sh
 #   MODELS="codebert graphcodebert unixcoder" BENCHMARKS="bcb poj104" ./run_everything.sh
-#   SAMPLE_PCT=1.0 EPOCHS=1 MODELS=codebert BENCHMARKS="bcb poj104" ./run_everything.sh
+#   EPOCHS=1 MODELS=codebert BENCHMARKS="bcb poj104" ./run_everything.sh
+#   SAMPLE_PCT=100.0 ./run_everything.sh  # full-data run
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR" || exit 1
@@ -62,6 +63,25 @@ run_python() {
   "${PYTHON_RUNNER[@]}" "$@"
 }
 
+missing_normalized_dataset_files() {
+  local data_dir="$1"
+  local file_name
+  local missing=""
+  for file_name in data.jsonl train.txt valid.txt test.txt; do
+    if [[ ! -f "${data_dir}/${file_name}" ]]; then
+      if [[ -n "$missing" ]]; then
+        missing="${missing}, "
+      fi
+      missing="${missing}${data_dir}/${file_name}"
+    fi
+  done
+  if [[ -n "$missing" ]]; then
+    printf '%s\n' "$missing"
+    return 0
+  fi
+  return 1
+}
+
 DATASETS_ROOT="${DATASETS_ROOT:-datasets}"
 RESULTS_ROOT="${RESULTS_ROOT:-results}"
 HF_CACHE_DIR="${HF_CACHE_DIR:-.hf_cache}"
@@ -83,7 +103,7 @@ BENCHMARKS="${BENCHMARKS:-bcb poj104 gcj karnalim poolc codenet semanticcloneben
 
 EPOCHS="${EPOCHS:-3}"
 SEED="${SEED:-42}"
-SAMPLE_PCT="${SAMPLE_PCT:-100.0}"
+SAMPLE_PCT="${SAMPLE_PCT:-1.0}"
 MAX_LENGTH="${MAX_LENGTH:-512}"
 TRAIN_BATCH_SIZE="${TRAIN_BATCH_SIZE:-8}"
 EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE:-8}"
@@ -178,12 +198,12 @@ if [[ "$INSPECT_DATASETS" == "1" ]]; then
   fi
   for benchmark in $BENCHMARKS; do
     data_dir="${DATASETS_ROOT}/${benchmark}"
-    if [[ -f "${data_dir}/data.jsonl" ]]; then
+    if missing_files="$(missing_normalized_dataset_files "$data_dir")"; then
+      echo "[SKIP] diagnostics for ${benchmark}: missing ${missing_files}"
+    else
       run_python scripts/inspect_dataset.py "$data_dir" \
         "${strict_args[@]}" \
         --output "${data_dir}/diagnostics.json" || fail
-    else
-      echo "[SKIP] diagnostics for ${benchmark}: missing ${data_dir}/data.jsonl"
     fi
   done
 fi
@@ -204,7 +224,9 @@ if [[ "$RUN_BENCHMARKS" == "1" ]]; then
 
   for benchmark in $BENCHMARKS; do
     data_dir="${DATASETS_ROOT}/${benchmark}"
-    if [[ -f "${data_dir}/data.jsonl" ]]; then
+    if missing_files="$(missing_normalized_dataset_files "$data_dir")"; then
+      echo "[SKIP] benchmark=${benchmark}: missing ${missing_files}"
+    else
       for model in $MODELS; do
         output_dir="${RESULTS_ROOT}/${model}_${benchmark}"
         echo "[RUN] model=${model} benchmark=${benchmark}"
@@ -227,8 +249,6 @@ if [[ "$RUN_BENCHMARKS" == "1" ]]; then
           printf '%s\t%s\tFAIL\t%s\n' "$model" "$benchmark" "$output_dir" >> "$status_file"
         fi
       done
-    else
-      echo "[SKIP] benchmark=${benchmark}: missing ${data_dir}/data.jsonl"
     fi
   done
 

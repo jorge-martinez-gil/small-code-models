@@ -41,3 +41,19 @@ def test_clone_detection_trainer_keeps_explicit_eval_dataset(monkeypatch: Any) -
     )
 
     assert captured["eval_dataset"] is eval_dataset
+
+
+def test_clone_detection_trainer_replaces_positional_none_eval_dataset(
+    monkeypatch: Any,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_trainer_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(trainer_module.Trainer, "__init__", fake_trainer_init)
+
+    trainer_module.CloneDetectionTrainer(object(), _Args(), None, object(), None)
+
+    assert isinstance(captured["args"][4], trainer_module._DeferredEvalDataset)
