@@ -4,7 +4,9 @@ __pycache__/
 .pytest_cache/
 .tmp.driveupload/
 .tmp.drivedownload/
+*.log
 .hf_cache/
+.hf-probe-cache/
 datasets/
 results/
 wandb/
