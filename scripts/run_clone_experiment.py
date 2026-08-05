@@ -3,8 +3,20 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
+
+# Keep third-party libraries quiet by default. On Colab/CI this driver is
+# launched without a TTY (e.g. via `!bash` or subprocess), where progress bars
+# from model downloads, tokenization and per-step training emit a new line on
+# every update. Across a large matrix that output floods the notebook front-end
+# until the browser tab freezes. These are only defaults -- exporting the same
+# variables before launching still takes precedence. They must be set before
+# transformers/huggingface_hub are imported (which happens inside main()).
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TRANSFORMERS_NO_ADVANCED_TQDM", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -84,7 +96,14 @@ def main() -> None:
             "prepare it as pair_jsonl before training."
         )
 
+    import transformers
     from transformers import DataCollatorWithPadding
+
+    # Belt-and-suspenders alongside the env vars above: drop routine INFO log
+    # lines and turn off transformers' own progress bars so an unattended run
+    # cannot flood the console/notebook output.
+    transformers.utils.logging.set_verbosity_warning()
+    transformers.utils.logging.disable_progress_bar()
 
     from small_code_models.data import build_datasets
     from small_code_models.metrics import print_metrics_table

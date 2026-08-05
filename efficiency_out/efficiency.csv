@@ -1,0 +1,7 @@
+model_key,model_name,model_id,architecture,device,dtype,batch_size,seq_length,total_params,total_params_millions,trainable_params,param_memory_mib,latency_mean_ms,latency_p50_ms,latency_p95_ms,throughput_pairs_per_s,peak_gpu_mem_mib,gflops_per_pair,flops_method
+codebert,CodeBERT,microsoft/codebert-base,encoder-only,cuda,float16,8,512,124647170,124.65,124647170,237.75,5.405,5.415,5.438,1479.98,320.31,127.639,analytic_estimate(2*params*seq_len)
+graphcodebert,GraphCodeBERT,microsoft/graphcodebert-base,encoder-only,cuda,float16,8,512,124647170,124.65,124647170,237.75,5.401,5.413,5.446,1481.21,320.06,127.639,analytic_estimate(2*params*seq_len)
+codet5,CodeT5 Base,Salesforce/codet5-base,encoder-decoder,cuda,float16,8,512,223474178,223.47,223474178,426.24,30.526,30.526,30.572,262.07,1081.69,228.838,analytic_estimate(2*params*seq_len)
+unixcoder,UniXCoder,microsoft/unixcoder-base,unified encoder-decoder,cuda,float16,8,512,125931266,125.93,125931266,240.19,5.33,5.295,5.423,1500.88,323.33,128.954,analytic_estimate(2*params*seq_len)
+plbart,PLBART,uclanlp/plbart-base,encoder-decoder,cuda,float16,8,512,139812866,139.81,139812866,266.67,7.91,7.951,7.992,1011.4,501.14,143.168,analytic_estimate(2*params*seq_len)
+polycoder,PolyCoder,NinedayWang/PolyCoder-160M,decoder-only,cuda,float16,8,512,123691008,123.69,123691008,235.92,6.406,6.346,6.528,1248.92,467.43,126.66,analytic_estimate(2*params*seq_len)

@@ -5,9 +5,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import torch
+import transformers
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
 from small_code_models.registry import ModelSpec
+
+
+_CODET5_MODEL_KEYS = {"codet5", "codet5_small", "codet5p_220m"}
+_CODET5_EXTRA_ID_TOKENS = [f"<extra_id_{index}>" for index in range(99, -1, -1)]
+
+
+def _fp32_loading_kwargs() -> dict[str, Any]:
+    """Return the version-appropriate argument for loading trainable FP32 weights."""
+    major_version = int(transformers.__version__.split(".", maxsplit=1)[0])
+    key = "dtype" if major_version >= 5 else "torch_dtype"
+    return {key: torch.float32}
 
 
 def load_model_and_tokenizer(
@@ -36,7 +49,12 @@ def load_model_and_tokenizer(
             "Provide --model_path for a local checkpoint."
         )
 
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    tokenizer_kwargs: dict[str, Any] = {}
+    if model_spec.key in _CODET5_MODEL_KEYS:
+        # Transformers 5.11 does not convert CodeT5's legacy token dictionaries.
+        tokenizer_kwargs["additional_special_tokens"] = _CODET5_EXTRA_ID_TOKENS
+
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint, **tokenizer_kwargs)
     added_tokens = 0
     if tokenizer.pad_token is None and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -51,6 +69,7 @@ def load_model_and_tokenizer(
         checkpoint,
         config=config,
         ignore_mismatched_sizes=True,
+        **_fp32_loading_kwargs(),
     )
     if added_tokens:
         model.resize_token_embeddings(len(tokenizer))
