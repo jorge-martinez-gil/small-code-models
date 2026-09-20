@@ -10,7 +10,7 @@ import random
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 from small_code_models.data import inspect_dataset_directory
 
